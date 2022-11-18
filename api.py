@@ -1,6 +1,7 @@
 import random
 import requests
-from config import cat_list, QUOTE_URL, QUOTE_PARAMS
+from bs4 import BeautifulSoup
+from config import cat_list, QUOTE_URL, QUOTE_PARAMS, NEWS_URL, NEWS_HEADERS
 
 
 def cat_status_code():
