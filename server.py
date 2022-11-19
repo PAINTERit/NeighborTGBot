@@ -1,6 +1,6 @@
 import telebot
 from config import TG_TOKEN
-from api import cat_status_code, quote_text, quote_author, yes_no_maybe
+from api import cat_status_code, quote_text, quote_author, yes_no_maybe, last_news
 
 bot = telebot.TeleBot(TG_TOKEN)
 
@@ -8,11 +8,12 @@ bot = telebot.TeleBot(TG_TOKEN)
 @bot.message_handler(commands=['start'])
 def hello(message):
     keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    button_quote = telebot.types.KeyboardButton('/quote')
-    button_cat = telebot.types.KeyboardButton('/cat')
-    button_yes_no = telebot.types.KeyboardButton('/question')
-    keyboard.row(button_quote, button_cat, button_yes_no)
-    bot.send_message(message.chat.id, 'Тебя приветствует соседский бот!\nНиже приведены команды, которые я могу исполнить :)', reply_markup=keyboard)
+    button_quote = telebot.types.KeyboardButton('/quote 📜')
+    button_cat = telebot.types.KeyboardButton('/cat 🐈')
+    button_yes_no = telebot.types.KeyboardButton('/question ❓')
+    button_news = telebot.types.KeyboardButton('/news 🌐')
+    keyboard.row(button_quote, button_cat, button_yes_no, button_news)
+    bot.send_message(message.chat.id, 'Тебя приветствует соседский бот!\nНиже приведены команды, которые я могу исполнить 😎', reply_markup=keyboard)
 
 
 @bot.message_handler(commands=['cat'])
@@ -33,9 +34,14 @@ def get_quote(message):
     bot.send_message(message.chat.id, 'Хочешь получить цитату?', reply_markup=keyboard)
 
 
+@bot.message_handler(commands=['news'])
+def get_news(message):
+    bot.send_message(message.chat.id, last_news())
+
+
 @bot.message_handler(commands=['question'])
 def yes_or_no(message):
-    bot.send_message(message.chat.id, "Задай вопрос, на который можно ответить 'да' или 'нет' :)")
+    bot.send_message(message.chat.id, "Задай вопрос, на который можно ответить 'да' или 'нет' 😉")
     bot.register_next_step_handler(message, answer)
 
 
@@ -52,18 +58,17 @@ def handle(call):
     elif call.data == 'yes_no':
         bot.send_message(call.message.chat.id, yes_or_no(call.message))
     elif call.data == 'cat_yes':
-        print(cat_status_code())
         bot.send_photo(call.message.chat.id, cat_status_code())
     elif call.data == 'quote_yes':
         bot.send_message(call.message.chat.id, f"{quote_text()}\n{quote_author()}")
     else:
-        bot.send_message(call.message.chat.id, 'Вы отказались!')
+        bot.send_message(call.message.chat.id, 'Вы отказались! 😞')
     bot.answer_callback_query(call.id)
 
 
 @bot.message_handler(content_types=['text'])
 def hello(message):
-    bot.send_message(message.chat.id, "Отвечаю на любой текст!")
+    bot.send_message(message.chat.id, "Ты просишь невозможное 🙁 Лучше выбери команду из меню!")
 
 
 print("Бот запущен!")

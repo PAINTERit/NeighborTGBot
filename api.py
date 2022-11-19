@@ -18,3 +18,11 @@ def quote_author():
 
 def yes_no_maybe():
     return requests.get('https://yesno.wtf/api').json()['image']
+
+
+def last_news():
+    response = requests.get(NEWS_URL, headers=NEWS_HEADERS)
+    soup = BeautifulSoup(response.text, 'lxml')
+    news = soup.find('a', class_='list-item__title color-font-hover-only').text
+    return news
+
