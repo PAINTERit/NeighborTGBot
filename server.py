@@ -1,8 +1,13 @@
 import telebot
 from config import TG_TOKEN
-from api import cat_status_code, quote_text, quote_author, yes_no_maybe, last_news
+from bot_functions import cat_status_code, quote_text, quote_author, yes_no_maybe, last_news, create_meme
 
 bot = telebot.TeleBot(TG_TOKEN)
+
+
+class Meme:
+    text: str
+    photo: str
 
 
 @bot.message_handler(commands=['start'])
@@ -12,7 +17,8 @@ def hello(message):
     button_cat = telebot.types.KeyboardButton('/cat 🐈')
     button_yes_no = telebot.types.KeyboardButton('/question ❓')
     button_news = telebot.types.KeyboardButton('/news 🌐')
-    keyboard.row(button_quote, button_cat, button_yes_no, button_news)
+    button_meme = telebot.types.KeyboardButton('/meme 🐸')
+    keyboard.row(button_quote, button_cat, button_yes_no, button_news, button_meme)
     bot.send_message(message.chat.id, 'Тебя приветствует соседский бот!\nНиже приведены команды, которые я могу исполнить 😎', reply_markup=keyboard)
 
 
@@ -47,6 +53,39 @@ def yes_or_no(message):
 
 def answer(message):
     bot.send_animation(message.chat.id, yes_no_maybe())
+
+
+@bot.message_handler(commands=['meme'])
+def meme_hello(message):
+    bot.send_message(message.chat.id, "Привет! Прикрепи картинку для создания мема.")
+    bot.register_next_step_handler(message, get_photo)
+
+
+@bot.message_handler(content_types=['photo'])
+def get_photo(message):
+
+    file_info = bot.get_file(message.photo[-1].file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+
+    src = f'user_images/{file_info.file_id}.jpg'
+    with open(src, 'wb') as new_file:
+        new_file.write(downloaded_file)
+
+    Meme.photo = src
+
+    bot.send_message(message.chat.id, "Далее напиши текст.")
+    bot.register_next_step_handler(message, get_text)
+
+
+def get_text(message):
+    Meme.text = message.text
+    bot.send_message(message.chat.id, "Вот твой мем!")
+    bot.send_photo(message.chat.id, create_meme(Meme.photo, Meme.text))
+    #bot.register_next_step_handler(message, send_meme)
+
+
+#def send_meme(message):
+    #bot.send_photo(message.chat.id, create_meme(Meme.photo, Meme.text))
 
 
 @bot.callback_query_handler(func=lambda call: True)
