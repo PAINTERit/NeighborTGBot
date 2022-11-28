@@ -4,7 +4,15 @@ import requests
 from bs4 import BeautifulSoup
 from PIL import Image, ImageDraw, ImageFont
 
-from config import CAT_LIST, NEWS_HEADERS, NEWS_URL, QUOTE_PARAMS, QUOTE_URL
+from config import (
+    CAT_LIST,
+    CAT_URL,
+    NEWS_HEADERS,
+    NEWS_URL,
+    QUESTION_URL,
+    QUOTE_PARAMS,
+    QUOTE_URL,
+)
 
 
 def get_cat_status_code() -> str:
@@ -12,7 +20,7 @@ def get_cat_status_code() -> str:
     Функция для выдачи картинки.
     :return: str
     """
-    return f"https://http.cat/{random.choice(CAT_LIST)}.jpg"
+    return f"{CAT_URL}{random.choice(CAT_LIST)}.jpg"
 
 
 def get_quote_text() -> str:
@@ -36,7 +44,7 @@ def get_answer() -> str:
     Функция которая выдает ответ-gif.
     :return: str
     """
-    return requests.get("https://yesno.wtf/api").json()["image"]
+    return requests.get(QUESTION_URL).json()["image"]
 
 
 def get_last_new() -> str:
@@ -59,10 +67,11 @@ def create_meme(photo, text) -> Image:
     :return: Image
     """
     image = Image.open(photo)
-
-    font = ImageFont.truetype("C:/Windows/Fonts/cour.ttf", 30)
+    W, H = image.size
+    font = ImageFont.truetype("impact.ttf", 40)
     drawer = ImageDraw.Draw(image)
-    drawer.text((100, 100), text, font=font, fill="white")
+    _, _, w, h = drawer.textbbox((0, 0), text, font=font)
+    drawer.text(((W - w) / 2, (H - h) / 1.1), text, font=font, fill="white")
 
     image.save("meme_image.jpg")
     return image
