@@ -1,27 +1,24 @@
 import telebot
-from telebot.types import Message, CallbackQuery
+from telebot.types import Message, ReplyKeyboardMarkup
 
-from bot_functions import (create_meme, get_answer, get_cat_status_code,
-                           get_last_new, get_quote_author, get_quote_text)
-from config import TG_TOKEN
+from bot_functions import (
+    create_meme,
+    get_answer,
+    get_cat_status_code,
+    get_last_new,
+    get_quote_author,
+    get_quote_text,
+)
+from config import TG_TOKEN, photo_src
 
 bot = telebot.TeleBot(TG_TOKEN)
+user_meme = {}
 
 
-class Meme:
+def navigation_keyboard() -> ReplyKeyboardMarkup:
     """
-    Класс для сохранения параметров для создания мема.
-    """
-    text: str
-    photo: str
-
-
-@bot.message_handler(commands=["start"])
-def hello(message: Message) -> None:
-    """
-    Начало работы с ботом. Создание клавиатуры для удобной работы.
-    :param message: Message
-    :return: None
+    Создание клавиатуры для выбора действия.
+    :return: ReplyKeyboardMarkup
     """
     keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
     button_quote = telebot.types.KeyboardButton("/quote 📜")
@@ -29,11 +26,22 @@ def hello(message: Message) -> None:
     button_yes_no = telebot.types.KeyboardButton("/question ❓")
     button_news = telebot.types.KeyboardButton("/news 🌐")
     button_meme = telebot.types.KeyboardButton("/meme 🐸")
-    keyboard.row(button_quote, button_cat, button_yes_no, button_news, button_meme)
+    return keyboard.add(
+        button_quote, button_cat, button_yes_no, button_news, button_meme, row_width=2
+    )
+
+
+@bot.message_handler(commands=["start"])
+def hello(message: Message) -> None:
+    """
+    Начало работы с ботом.
+    :param message: Message
+    :return: None
+    """
     bot.send_message(
         message.chat.id,
         "Тебя приветствует соседский бот!\nНиже приведены команды, которые я могу исполнить 😎",
-        reply_markup=keyboard,
+        reply_markup=navigation_keyboard(),
     )
 
 
@@ -44,15 +52,7 @@ def cat_image(message: Message) -> None:
     :param message: Message
     :return: None
     """
-    keyboard = telebot.types.InlineKeyboardMarkup()
-    button_yes = telebot.types.InlineKeyboardButton("Да", callback_data="cat_yes")
-    button_no = telebot.types.InlineKeyboardButton("Нет", callback_data="cat_no")
-    keyboard.row(button_yes, button_no)
-    bot.send_message(
-        message.chat.id,
-        "Хочешь получить картинку статус кода с котиком?",
-        reply_markup=keyboard,
-    )
+    bot.send_message(message.chat.id, get_cat_status_code())
 
 
 @bot.message_handler(commands=["quote"])
@@ -62,11 +62,7 @@ def quote(message: Message) -> None:
     :param message: Message
     :return: None
     """
-    keyboard = telebot.types.InlineKeyboardMarkup()
-    button_yes = telebot.types.InlineKeyboardButton("Да", callback_data="quote_yes")
-    button_no = telebot.types.InlineKeyboardButton("Нет", callback_data="quote_no")
-    keyboard.row(button_yes, button_no)
-    bot.send_message(message.chat.id, "Хочешь получить цитату?", reply_markup=keyboard)
+    bot.send_message(message.chat.id, f"{get_quote_text()}\n{get_quote_author()}")
 
 
 @bot.message_handler(commands=["news"])
@@ -92,7 +88,7 @@ def yes_or_no(message: Message) -> None:
     bot.register_next_step_handler(message, answer)
 
 
-def answer(message:  Message) -> None:
+def answer(message: Message) -> None:
     """
     Функция для выдачи ответа на вопрос пользователя.
     :param message: Message
@@ -109,6 +105,7 @@ def meme_hello(message: Message) -> None:
     :return: None
     """
     bot.send_message(message.chat.id, "Привет! Прикрепи картинку для создания мема.")
+    user_meme[message.chat.id] = {}
     bot.register_next_step_handler(message, get_info)
 
 
@@ -123,11 +120,9 @@ def get_info(message: Message) -> None:
     file_info = bot.get_file(message.photo[-1].file_id)
     downloaded_file = bot.download_file(file_info.file_path)
 
-    src = f"user_images/{file_info.file_id}.jpg"
-    with open(src, "wb") as new_file:
+    user_meme[message.chat.id]["photo"] = f"{photo_src}{file_info.file_id}.jpg"
+    with open(user_meme[message.chat.id]["photo"], "wb") as new_file:
         new_file.write(downloaded_file)
-
-    Meme.photo = src
 
     bot.send_message(message.chat.id, "Далее напиши текст.")
     bot.register_next_step_handler(message, get_text)
@@ -139,7 +134,7 @@ def get_text(message: Message) -> None:
     :param message: Message
     :return: None
     """
-    Meme.text = message.text
+    user_meme[message.chat.id]["text"] = message.text
     bot.send_message(message.chat.id, "Вот твой мем!")
     send_meme(message)
 
@@ -150,35 +145,21 @@ def send_meme(message: Message) -> None:
     :param message: Message
     :return: None
     """
-    bot.send_photo(message.chat.id, create_meme(Meme.photo, Meme.text))
+    bot.send_photo(
+        message.chat.id,
+        create_meme(
+            user_meme[message.chat.id]["photo"], user_meme[message.chat.id]["text"]
+        ),
+    )
+    clear_content(message.chat.id)
 
 
-@bot.callback_query_handler(func=lambda call: True)
-def handle(call: CallbackQuery) -> None:
-    """
-    Функция, содержащая ответы на определенные кнопки в клавиатуре.
-    :param call: CallbackQuery
-    :return: None
-    """
-    if call.data == "quote":
-        quote()
-    elif call.data == "cat_image":
-        cat_image()
-    elif call.data == "yes_no":
-        yes_or_no()
-    elif call.data == "cat_yes":
-        bot.send_photo(call.message.chat.id, get_cat_status_code())
-    elif call.data == "quote_yes":
-        bot.send_message(
-            call.message.chat.id, f"{get_quote_text()}\n{get_quote_author()}"
-        )
-    else:
-        bot.send_message(call.message.chat.id, "Вы отказались! 😞")
-    bot.answer_callback_query(call.id)
+def clear_content(user_id):
+    user_meme[user_id] = {}
 
 
 @bot.message_handler(content_types=["text"])
-def hello(message: Message) -> None:
+def wrong_answer(message: Message) -> None:
     """
     Функция, которая выдает ответ на любое сообщение, которого нет в функциях.
     :param message: Message
