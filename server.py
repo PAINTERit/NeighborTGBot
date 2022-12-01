@@ -1,15 +1,10 @@
 import telebot
 from telebot.types import Message, ReplyKeyboardMarkup
 
-from bot_functions import (
-    create_meme,
-    get_answer,
-    get_cat_status_code,
-    get_last_new,
-    get_quote_author,
-    get_quote_text,
-)
-from config import TG_TOKEN, photo_src
+from bot_functions import (create_meme, get_answer, get_cat_status_code,
+                           get_last_new, get_quote_author, get_quote_text)
+from config import photo_src
+from secret_config import TG_TOKEN
 
 bot = telebot.TeleBot(TG_TOKEN)
 user_meme = {}
@@ -168,7 +163,3 @@ def wrong_answer(message: Message) -> None:
     bot.send_message(
         message.chat.id, "Ты просишь невозможное 🙁 Лучше выбери команду из меню!"
     )
-
-
-print("Бот запущен!")
-bot.infinity_polling()
