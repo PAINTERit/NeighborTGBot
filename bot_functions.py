@@ -4,15 +4,9 @@ import requests
 from bs4 import BeautifulSoup
 from PIL import Image, ImageDraw, ImageFont
 
-from config import (
-    CAT_LIST,
-    CAT_URL,
-    NEWS_HEADERS,
-    NEWS_URL,
-    QUESTION_URL,
-    QUOTE_PARAMS,
-    QUOTE_URL,
-)
+from config import (CAT_LIST, CAT_URL, NEWS_URL, QUESTION_URL, QUOTE_PARAMS,
+                    QUOTE_URL)
+from secret_config import NEWS_HEADERS
 
 
 def get_cat_status_code() -> str:
